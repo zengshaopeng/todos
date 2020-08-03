@@ -8,25 +8,13 @@ import {
   creatToggle 
 } from './actions'
 
-import reducer from './reducer'
-
-
-// function combineReducers(reducers) {
-//   return function reducer(state, action) {
-//     const changed = {}
-//     for (let key in reducers) {
-//       changed[key] = reducers[key](state[key], action)
-//     }
-//     return {
-//       ...state,
-//       ...changed
-//     }
-//   }
-// }
+let idSeq = Date.now()
 
 function bindActionCreators(actionCreators, dispatch) {
   const ret = {}
+  console.log('actionCreatorsssss', actionCreators)
   for (let key in actionCreators) {
+    console.log('key', key)
     ret[key] = function(...args) {
       const actionCreator = actionCreators[key]
       // 如果是addTodo,就是将参数传递进去addTodo中， actionCreators[key]就是creatAdd，即
@@ -35,7 +23,9 @@ function bindActionCreators(actionCreators, dispatch) {
       //     type: 'add',
       //     payload
       //   }
+      console.log('actionCreator', actionCreator)
       const action = actionCreator(...args) 
+      console.log('action', action)
     // 等同于 dispatch({
     //   type: 'add',
     //   payload: {
@@ -47,6 +37,7 @@ function bindActionCreators(actionCreators, dispatch) {
       dispatch(action)
     }
   }
+  console.log('ret', ret)
   return ret
 }
 
@@ -76,7 +67,11 @@ function Controll(props) {
     //   }
     // })
 
-    addTodo(newText)
+    addTodo({
+        id: ++idSeq,
+        text: newText,
+        comlete: false
+    })
 
     inputRef.current.value = ''
   }
@@ -143,24 +138,9 @@ function Todos(props ) {
 
 const LS_KEY = 'LIST'
 
-// 解决无法获取上下文的最新的todos和incremeentCount
-let store = {
-  todos: [],
-  incrementCount: 0
-}
-
 function TodoList() {
 
   const [todos, setTodos] = useState([])
-
-  const [incrementCount, setIncrementCount] = useState(0)
-
-  useEffect(() => {
-    Object.assign(store, {
-      todos,
-      incrementCount
-    })
-  }, [todos, incrementCount])
 
   // const addTodo = (todo) => {
   //   setTodos(todos => [...todos, todo])
@@ -181,127 +161,37 @@ function TodoList() {
   //   }))
   // }
 
-  // const reducer = {
-  //   todos(state, action) {
-  //     const { type, payload } = action
-  //     switch(type) {
-  //       case 'set':
-  //         return payload
-  //       case 'add':
-  //         return [...state, payload]
-  //       case 'remove':
-  //         return state.filter(todo => {
-  //           return todo.id !== payload
-  //         }) 
-  //       case 'toggle':
-  //         return state.map(todo => {
-  //           return todo.id === payload ? {
-  //             ...todo,
-  //             comlete: !todo.comlete
-  //           } : todo
-  //         })
-  //       default:
-  //     }
-  //   },
-  //   incrementCount(state, action) {
-  //     const { type } = action
-  //     switch(type) {
-  //       case 'set':
-  //       case 'add':
-  //         return state + 1
-  //       default:
-  //     }
-  //   }
-  // }
-
-  // function reducer(state, action) {
-  //   const { type, payload } = action
-  //   const { todos, incrementCount } = state
-  //   switch(type) {
-  //     case 'set':
-  //       return {
-  //         ...state,
-  //         todos: payload,
-  //         incrementCount: incrementCount + 1
-  //       }
-  //     case 'add':
-  //       return {
-  //         ...state,
-  //         todos: [...todos, payload],
-  //         incrementCount: incrementCount + 1
-  //       }
-  //     case 'remove':
-  //       return {
-  //        ...state,
-  //        todos: todos.filter(todo => {
-  //          return todo.id !== payload
-  //        }) 
-  //       }
-  //     case 'toggle':
-  //       return {
-  //         ...state,
-  //         todos: todos.map(todo => {
-  //           return todo.id === payload ? {
-  //             ...todo,
-  //             comlete: !todo.comlete
-  //           } : todo
-  //         })
-  //       }
-  //     default:
-  //   }
-  //     return state
-  // }
-
-  // const reducer = combineReducers(reducers)
-
-
-  // const dispatch = useCallback((action) => {
-
-  //   console.log('action11111', action)
-  //   const state = { todos, incrementCount }
-  //   const setters = {
-  //     todos: setTodos,
-  //     incrementCount: setIncrementCount
-  //   }
-
-  //   if (typeof action === 'function') {
-
-  //     action(dispatch, ()=> store);
-  //     return
-  //   }
-
-  //   const newState = reducer(state, action)
-  //   for (let key in newState) {
-  //     setters[key](newState[key])
-  //   }
-  // }, [todos, incrementCount])
-
-  // 引入异步后不需要usecallback
-  const dispatch = (action) => {
-
-    // const state = { todos, incrementCount }
-    const setters = {
-      todos: setTodos,
-      incrementCount: setIncrementCount
+  const dispatch = useCallback((action) => {
+    const { type, payload } = action
+    switch(type) {
+      case 'set': 
+        setTodos(payload)
+        break
+      case 'add':
+        setTodos(todos => [...todos, payload])
+        break
+      case 'remove': 
+      setTodos(todos => todos.filter(todo => {
+        return todo.id !== payload
+      }))
+        break
+      case 'toggle':
+        setTodos(todos => todos.map(todo => {
+          return todo.id === payload ? {
+            ...todo,
+            comlete: !todo.comlete
+          } : todo 
+        }))
+        break;
+      default: 
     }
-
-    if (typeof action === 'function') {
-
-      action(dispatch, ()=> store);
-      return
-    }
-
-    const newState = reducer(store, action)
-    for (let key in newState) {
-      setters[key](newState[key])
-    }
-  }
+  }, [])
 
   useEffect(() => {
     const todos = JSON.parse(localStorage.getItem(LS_KEY) || [])
     dispatch(creatSet(todos))
     // setTodos(todos)
-  }, [])
+  }, [dispatch])
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(todos))
